@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Solar System - Three.js</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; color: #fff; }
+    #controls { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; max-height: 90vh; overflow-y: auto; }
+    label, input { display: block; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div id="controls"></div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 1.5);
+    scene.add(pointLight);
+
+    // Sun
+    const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
+
+    // Planet data
+    const planetData = [
+      { name: 'Mercury', color: 0xa9a9a9, size: 0.2, orbitRadius: 4, speed: 0.04 },
+      { name: 'Venus',   color: 0xffcc66, size: 0.4, orbitRadius: 6, speed: 0.03 },
+      { name: 'Earth',   color: 0x2233ff, size: 0.5, orbitRadius: 8, speed: 0.02 },
+      { name: 'Mars',    color: 0xff3300, size: 0.3, orbitRadius: 10, speed: 0.018 },
+      { name: 'Jupiter', color: 0xff9966, size: 1.0, orbitRadius: 13, speed: 0.01 },
+      { name: 'Saturn',  color: 0xffcc99, size: 0.9, orbitRadius: 16, speed: 0.009 },
+      { name: 'Uranus',  color: 0x66ffff, size: 0.7, orbitRadius: 19, speed: 0.007 },
+      { name: 'Neptune', color: 0x3366ff, size: 0.7, orbitRadius: 22, speed: 0.006 }
+    ];
+
+    const planets = [];
+    const planetAngles = [];
+    const planetSpeeds = {};
+
+    const controlsDiv = document.getElementById("controls");
+
+    planetData.forEach(data => {
+      const geometry = new THREE.SphereGeometry(data.size, 32, 32);
+      const material = new THREE.MeshStandardMaterial({ color: data.color });
+      const planet = new THREE.Mesh(geometry, material);
+      scene.add(planet);
+      planets.push({ mesh: planet, orbitRadius: data.orbitRadius });
+      planetAngles.push(0);
+      planetSpeeds[data.name] = data.speed;
+
+      // Add control
+      const label = document.createElement("label");
+      label.textContent = `${data.name} Speed:`;
+      const input = document.createElement("input");
+      input.type = "range";
+      input.min = "0.001";
+      input.max = "0.1";
+      input.step = "0.001";
+      input.value = data.speed;
+      input.addEventListener("input", e => {
+        planetSpeeds[data.name] = parseFloat(e.target.value);
+      });
+      controlsDiv.appendChild(label);
+      controlsDiv.appendChild(input);
+    });
+
+    camera.position.z = 30;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      planets.forEach((planet, i) => {
+        planetAngles[i] += planetSpeeds[planetData[i].name];
+        planet.mesh.position.x = planet.orbitRadius * Math.cos(planetAngles[i]);
+        planet.mesh.position.z = planet.orbitRadius * Math.sin(planetAngles[i]);
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
